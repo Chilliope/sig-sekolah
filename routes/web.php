@@ -1,0 +1,13 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SekolahController;
+use App\Http\Controllers\PetaController;
+
+Route::get('/', [PetaController::class, 'index'])->name('peta.index');
+Route::get('/data/sekolah', [PetaController::class, 'geojson'])
+ ->name('peta.data');
+
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::resource('sekolah', SekolahController::class)->except('show');
+});
