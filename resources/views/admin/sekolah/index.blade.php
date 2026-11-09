@@ -3,7 +3,7 @@
 @section('content')
     <div class="flex items-center justify-between mb-4">
         <h1 class="text-2xl font-bold">Data Sekolah</h1>
-        <a href="{{ route('admin.sekolah.create') }}" class="px-4 py-2 bg-blue-700 text-white rounded">
+        <a href="{{ route('dinas.sekolah.create') }}" class="px-4 py-2 bg-blue-700 text-white rounded">
             + Tambah Sekolah
         </a>
     </div>
@@ -39,8 +39,8 @@
                             {{ $s->latitude }}, {{ $s->longitude }}
                         </td>
                         <td class="p-3 flex gap-3">
-                            <a href="{{ route('admin.sekolah.edit', $s) }}" class="text-blue-700">Ubah</a>
-                            <form method="POST" action="{{ route('admin.sekolah.destroy', $s) }}"
+                            <a href="{{ route('sekolah.edit', $s) }}" class="text-blue-700">Ubah</a>
+                            <form method="POST" action="{{ route('dinas.sekolah.destroy', $s) }}"
                                 onsubmit="return confirm('Hapus data ini?')">
                                 @csrf
                                 @method('DELETE')

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,16 +11,45 @@
 
 <body class="bg-gray-100 text-gray-800">
     <nav class="bg-blue-800 text-white">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex gap-6">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
             <span class="font-bold">SIG Sekolah</span>
             <a href="{{ url('/') }}">Peta Publik</a>
-            <a href="{{ route('admin.sekolah.index') }}">Data Sekolah</a>
+            @auth
+                <a href="{{ route('dashboard') }}">Dashboard</a>
+                @if (auth()->user()->isAdmin())
+                    <a href="{{ route('admin.users.index') }}">Pengguna</a>
+                @endif
+                @if (auth()->user()->isDinas())
+                    <a href="{{ route('dinas.sekolah.index') }}">Data Sekolah</a>
+                @endif
+                @if (auth()->user()->isSekolah() && auth()->user()->sekolah_id)
+                    <a href="{{ route('sekolah.edit', auth()->user()->sekolah_id) }}">
+                        Sekolah Saya
+                    </a>
+                @endif
+                    <a href="{{ route('password.edit') }}">
+                        Ubah Kata Sandi
+                    </a>
+                <form method="POST" action="{{ route('logout') }}" class="ml-auto flex items-center gap-3">
+                    @csrf
+                    <span class="text-sm">
+                        {{ auth()->user()->name }}
+                        ({{ auth()->user()->roleLabel() }})
+                    </span>
+                    <button class="underline">Keluar</button>
+                </form>
+            @endauth
         </div>
     </nav>
     <main class="max-w-6xl mx-auto px-4 py-6">
         @if (session('success'))
             <div class="mb-4 p-3 rounded bg-green-100 text-green-800">
                 {{ session('success') }}
+            </div>
+        @endif
+        @if (session('error'))
+            <div class="mb-4 p-3 rounded bg-red-100 text-red-800">
+                {{ session('error') }}
             </div>
         @endif
         @yield('content')

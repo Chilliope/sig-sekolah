@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Sekolah;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class SekolahController extends Controller
 {
@@ -28,31 +30,56 @@ class SekolahController extends Controller
     {
         return view('admin.sekolah.create');
     }
-
     public function store(Request $request)
     {
         Sekolah::create($request->validate($this->rules()));
-        return redirect()->route('admin.sekolah.index')
+        return redirect()->route('dinas.sekolah.index')
             ->with('success', 'Data sekolah berhasil ditambahkan.');
     }
-
     public function edit(Sekolah $sekolah)
     {
+        Gate::authorize('update', $sekolah);
         return view('admin.sekolah.edit', compact('sekolah'));
     }
-
     public function update(Request $request, Sekolah $sekolah)
     {
-        $sekolah->update($request->validate($this->rules($sekolah->id)));
-        return redirect()->route('admin.sekolah.index')
+        Gate::authorize('update', $sekolah);
+        $data = $request->validate($this->rules($sekolah->id));
+        // NPSN adalah identitas resmi: tidak boleh diubah oleh sekolah
+        if ($request->user()->isSekolah()) {
+            unset($data['npsn']);
+        }
+        // Batasi perubahan koordinat maksimal 500 meter
+        if (isset($data['latitude'], $data['longitude'])) {
+            $jarak = $this->hitungJarak(
+                (float) $sekolah->latitude,
+                (float) $sekolah->longitude,
+                (float) $data['latitude'],
+                (float) $data['longitude']
+            );
+
+            if ($jarak > 500) {
+                throw ValidationException::withMessages([
+                    'latitude' => 'Perubahan lokasi tidak boleh lebih dari 500 meter dari titik sebelumnya.',
+                ]);
+            }
+        }
+
+        $sekolah->update($data);
+        return $this->kembali($request)
             ->with('success', 'Data sekolah berhasil diperbarui.');
     }
-
     public function destroy(Sekolah $sekolah)
     {
         $sekolah->delete();
-        return redirect()->route('admin.sekolah.index')
+        return redirect()->route('dinas.sekolah.index')
             ->with('success', 'Data sekolah berhasil dihapus.');
+    }
+    private function kembali(Request $request)
+    {
+        return $request->user()->isDinas()
+            ? redirect()->route('dinas.sekolah.index')
+            : redirect()->route('dashboard');
     }
 
     private function rules(?int $id = null): array
@@ -80,7 +107,7 @@ class SekolahController extends Controller
             'jenjang' => 'nullable|in:SD,SMP,SMA,SMK',
             'status' => 'nullable|in:Negeri,Swasta',
         ]);
-        
+
         $query = Sekolah::query()
             ->whereNotNull('latitude')
             ->whereNotNull('longitude');
@@ -121,5 +148,30 @@ class SekolahController extends Controller
             'type' => 'FeatureCollection',
             'features' => $features,
         ]);
+    }
+
+    private function hitungJarak(
+        float $lat1,
+        float $lon1,
+        float $lat2,
+        float $lon2
+    ): float {
+        $radiusBumi = 6371000;
+
+        $lat1 = deg2rad($lat1);
+        $lon1 = deg2rad($lon1);
+        $lat2 = deg2rad($lat2);
+        $lon2 = deg2rad($lon2);
+
+        $deltaLat = $lat2 - $lat1;
+        $deltaLon = $lon2 - $lon1;
+
+        $a = sin($deltaLat / 2) ** 2
+            + cos($lat1) * cos($lat2)
+            * sin($deltaLon / 2) ** 2;
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $radiusBumi * $c;
     }
 }

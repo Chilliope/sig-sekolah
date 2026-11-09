@@ -5,9 +5,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Peta Sekolah</title>
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+
     <style>
         html,
         body {
@@ -19,10 +21,11 @@
         header {
             min-height: 56px;
             box-sizing: border-box;
-            padding: 0 16px;
+            padding: 10px 16px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
             background: #1e3a8a;
             color: #fff;
         }
@@ -32,10 +35,30 @@
             margin: 0;
         }
 
-        header select {
-            padding: 6px 10px;
+        header select,
+        header input {
+            padding: 7px 10px;
             border-radius: 6px;
             border: 1px solid #d1d5db;
+            background: white;
+            font-size: 13px;
+        }
+
+        header input {
+            width: 200px;
+        }
+
+        header button {
+            padding: 7px 12px;
+            border: none;
+            border-radius: 6px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+        }
+
+        header button:hover {
+            background: #1d4ed8;
         }
 
         header a {
@@ -83,10 +106,7 @@
 
         @media (max-width: 600px) {
             header {
-                height: auto;
                 min-height: 56px;
-                flex-wrap: wrap;
-                padding: 10px;
                 gap: 10px;
             }
 
@@ -99,7 +119,7 @@
             }
 
             #map {
-                height: calc(100% - 100px);
+                height: calc(100% - 150px);
                 min-height: 400px;
             }
         }
@@ -107,6 +127,7 @@
 </head>
 
 <body>
+
     <header>
         <h1>Peta Sekolah</h1>
 
@@ -124,26 +145,27 @@
             <option value="Swasta">Swasta</option>
         </select>
 
-
         <input type="search" id="cari-sekolah" placeholder="Cari nama sekolah..." aria-label="Cari nama sekolah"
-            autocomplete="off" style="padding: 7px 10px; border-radius: 6px; border: 1px solid #d1d5db; width: 200px;">
+            autocomplete="off">
 
-        <button type="button" id="tombol-cari"
-            style="padding: 7px 12px; border: none; border-radius: 6px; background: #2563eb; color: white; cursor: pointer;">
+        <button type="button" id="tombol-cari">
             Cari
         </button>
 
         <span id="jumlah">Memuat data...</span>
 
-        <a href="{{ route('admin.sekolah.index') }}">
-            Kelola Data
-        </a>
+        @auth
+            <a href="{{ route('dashboard') }}">Dashboard</a>
+        @else
+            <a href="{{ route('login') }}">Masuk</a>
+        @endauth
     </header>
 
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
     <script>
         const map = L.map('map').setView([-3.3194, 114.5908], 12);
 
@@ -168,10 +190,10 @@
             }
         );
 
-        // Peta dasar yang ditampilkan pertama kali.
+        // Peta dasar pertama.
         osm.addTo(map);
 
-        // Kontrol untuk berpindah peta dasar.
+        // Pilihan peta dasar.
         const baseMaps = {
             'OpenStreetMap': osm,
             'Satelit': satelit,
@@ -183,8 +205,6 @@
             position: 'topright'
         }).addTo(map);
 
-
-        // Warna marker berdasarkan jenjang sekolah.
         const warnaJenjang = {
             SD: '#16a34a',
             SMP: '#2563eb',
@@ -192,7 +212,6 @@
             SMK: '#ea580c'
         };
 
-        // Membuat marker lingkaran dengan warna sesuai jenjang.
         function buatMarker(feature, latlng) {
             const jenjang = feature.properties.jenjang;
             const warna = warnaJenjang[jenjang] || '#6b7280';
@@ -201,24 +220,22 @@
                 icon: L.divIcon({
                     className: '',
                     html: `
-                <span style="
-                    display: block;
-                    width: 16px;
-                    height: 16px;
-                    background: ${warna};
-                    border: 2px solid white;
-                    border-radius: 50%;
-                    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-                "></span>
-            `,
+                        <span style="
+                            display: block;
+                            width: 16px;
+                            height: 16px;
+                            background: ${warna};
+                            border: 2px solid white;
+                            border-radius: 50%;
+                            box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+                        "></span>
+                    `,
                     iconSize: [20, 20],
                     iconAnchor: [10, 10]
                 })
             });
         }
 
-
-        // Mencegah teks database diperlakukan sebagai HTML.
         function esc(teks) {
             const d = document.createElement('div');
             d.textContent = teks ?? '';
@@ -234,10 +251,12 @@
         map.addLayer(cluster);
 
         const lapisan = L.geoJSON(null, {
+
             pointToLayer: buatMarker,
 
             onEachFeature: (fitur, layer) => {
                 const p = fitur.properties;
+
                 const koordinat = fitur.geometry.coordinates;
                 const lng = koordinat[0];
                 const lat = koordinat[1];
@@ -245,22 +264,51 @@
                 const warna = warnaJenjang[p.jenjang] || '#6b7280';
 
                 const popup = `
-            <strong>${esc(p.nama)}</strong><br>
-            NPSN: ${esc(p.npsn)}<br>
-            <span style="color: ${warna}; font-weight: bold;">
-                ${esc(p.jenjang)}
-            </span>
-            - ${esc(p.status)}<br>
-            ${esc(p.alamat)}, ${esc(p.kecamatan)}<br>
-            Telp: ${esc(p.telepon) || '-'}<br>
-            <small>Koordinat: ${lat}, ${lng}</small>
-        `;
+                        ${
+        p.logo_url
+            ? `<img src="${esc(p.logo_url)}"
+                            alt="Logo sekolah"
+                            style="width:80px;height:80px;object-fit:contain;margin-bottom:8px;">`
+            : ''
+    }
+
+                    <strong>${esc(p.nama)}</strong><br>
+                    NPSN: ${esc(p.npsn)}<br>
+
+                    <span style="color: ${warna}; font-weight: bold;">
+                        ${esc(p.jenjang)}
+                    </span>
+                    - ${esc(p.status)}<br>
+
+                    ${esc(p.alamat)}, ${esc(p.kecamatan)}<br>
+                    Telp: ${esc(p.telepon) || '-'}<br>
+
+                    Kepala sekolah: ${esc(p.kepala_sekolah) || '-'}<br>
+                    Akreditasi: ${esc(p.akreditasi) || '-'}<br>
+
+                    Siswa: ${p.jumlah_siswa ?? '-'}
+                    | Guru: ${p.jumlah_guru ?? '-'}<br>
+
+                    <small>Koordinat: ${lat}, ${lng}</small>
+
+                    <a href="${esc(p.profile_url)}"
+   style="
+       display:inline-block;
+       margin-top:8px;
+       padding:7px 12px;
+       background:#1d4ed8;
+       color:white;
+       border-radius:6px;
+       text-decoration:none;
+   ">
+   Lihat Profil Sekolah
+</a>
+                `;
 
                 layer.bindPopup(popup);
             }
         });
 
-        // Legenda warna marker.
         const legend = L.control({
             position: 'bottomright'
         });
@@ -270,22 +318,27 @@
 
             div.innerHTML = `
                 <h4>Jenjang Sekolah</h4>
+
                 <div class="legend-item">
                     <span class="legend-color" style="background:#16a34a"></span>
                     SD
                 </div>
+
                 <div class="legend-item">
                     <span class="legend-color" style="background:#2563eb"></span>
                     SMP
                 </div>
+
                 <div class="legend-item">
                     <span class="legend-color" style="background:#dc2626"></span>
                     SMA
                 </div>
+
                 <div class="legend-item">
                     <span class="legend-color" style="background:#ea580c"></span>
                     SMK
                 </div>
+
                 <div class="legend-item">
                     <span class="legend-color" style="background:#6b7280"></span>
                     Lainnya
@@ -296,8 +349,6 @@
         };
 
         legend.addTo(map);
-
-        // Memuat data sekolah dari route GeoJSON.
 
         async function muatData(jenjang = '', status = '') {
             const jumlah = document.getElementById('jumlah');
@@ -332,22 +383,28 @@
                     throw new Error('Format data GeoJSON tidak sesuai.');
                 }
 
+                // Bersihkan marker sebelumnya.
                 cluster.clearLayers();
                 lapisan.clearLayers();
+
+                // Masukkan data baru.
                 lapisan.addData(data);
 
-                // Masukkan setiap marker ke dalam kelompok.
+                // Masukkan setiap marker ke cluster.
                 lapisan.eachLayer(function(marker) {
                     cluster.addLayer(marker);
                 });
 
+                // Tampilkan jumlah sekolah.
                 jumlah.textContent = data.features.length + ' sekolah';
 
+                // Atur posisi peta.
                 if (data.features.length > 0) {
                     map.fitBounds(lapisan.getBounds().pad(0.1));
                 } else {
                     map.setView([-3.3194, 114.5908], 12);
                 }
+
             } catch (error) {
                 console.error('Kesalahan memuat peta:', error);
                 jumlah.textContent = 'Data gagal dimuat';
@@ -395,13 +452,12 @@
             ditemukan.openPopup();
         }
 
-
-        // Klik tombol Cari.
+        // Tombol Cari.
         document
             .getElementById('tombol-cari')
             .addEventListener('click', cariSekolah);
 
-        // Tekan Enter untuk mencari.
+        // Pencarian menggunakan Enter.
         document
             .getElementById('cari-sekolah')
             .addEventListener('keydown', function(e) {
@@ -411,8 +467,13 @@
             });
 
         function terapkanFilter() {
-            const jenjang = document.getElementById('filter-jenjang').value;
-            const status = document.getElementById('filter-status').value;
+            const jenjang = document
+                .getElementById('filter-jenjang')
+                .value;
+
+            const status = document
+                .getElementById('filter-status')
+                .value;
 
             muatData(jenjang, status);
         }
@@ -427,6 +488,7 @@
 
         muatData();
     </script>
+
 </body>
 
 </html>

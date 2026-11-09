@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Sekolah;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PetaController extends Controller
 {
@@ -19,43 +20,57 @@ class PetaController extends Controller
             'status' => 'nullable|in:Negeri,Swasta',
         ]);
 
-        $features = Sekolah::query()
+        $features = Sekolah::with('profil')
+            ->when($request->jenjang, function ($query, $jenjang) {
+                $query->where('jenjang', $jenjang);
+            })
+            ->when($request->status, function ($query, $status) {
+                $query->where('status', $status);
+            })
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
-            ->when(
-                $request->filled('jenjang'),
-                fn ($q) => $q->where('jenjang', $request->jenjang)
-            )
-            ->when(
-                $request->filled('status'),
-                fn ($q) => $q->where('status', $request->status)
-            )
             ->get()
-            ->map(fn ($s) => [
-                'type' => 'Feature',
-                'geometry' => [
-                    'type' => 'Point',
-
-                    // GeoJSON menggunakan urutan [longitude, latitude].
-                    'coordinates' => [
-                        (float) $s->longitude,
-                        (float) $s->latitude,
+            ->map(function ($s) {
+                return [
+                    'type' => 'Feature',
+                    'geometry' => [
+                        'type' => 'Point',
+                        'coordinates' => [
+                            (float) $s->longitude,
+                            (float) $s->latitude,
+                        ],
                     ],
-                ],
-                'properties' => [
-                    'npsn' => $s->npsn,
-                    'nama' => $s->nama,
-                    'jenjang' => $s->jenjang,
-                    'status' => $s->status,
-                    'alamat' => $s->alamat,
-                    'kecamatan' => $s->kecamatan,
-                    'telepon' => $s->telepon,
-                ],
-            ]);
+                    'properties' => [
+                        'id' => $s->id,
+                        'profile_url' => route('peta.profil', $s->id),
+                        'npsn' => $s->npsn,
+                        'nama' => $s->nama,
+                        'jenjang' => $s->jenjang,
+                        'status' => $s->status,
+                        'alamat' => $s->alamat,
+                        'kecamatan' => $s->kecamatan,
+                        'telepon' => $s->telepon,
+                        'kepala_sekolah' => $s->profil?->kepala_sekolah,
+                        'akreditasi' => $s->profil?->akreditasi,
+                        'jumlah_siswa' => $s->profil?->jumlah_siswa,
+                        'jumlah_guru' => $s->profil?->jumlah_guru,
+                        'logo_url' => $s->profil?->logo_path
+                            ? Storage::disk('public')->url($s->profil->logo_path)
+                            : null,
+                    ],
+                ];
+            });
 
         return response()->json([
             'type' => 'FeatureCollection',
             'features' => $features,
         ]);
+    }
+
+    public function profil(Sekolah $sekolah)
+    {
+        $sekolah->load('profil');
+
+        return view('peta.profil', compact('sekolah'));
     }
 }

@@ -26,10 +26,7 @@
                 </label>
 
                 <input type="text" id="{{ $name }}" name="{{ $name }}"
-                    value="{{ old($name, $sekolah->$name) }}" class="{{ $cls }}"
-                    @if ($name === 'npsn') maxlength="8"
-                        inputmode="numeric" @endif
-                    @if (in_array($name, ['npsn', 'nama', 'kecamatan'], true)) required @endif>
+                    value="{{ old($name, $sekolah->$name) }}" @readonly($name === 'npsn' && auth()->user()->isSekolah()) class="{{ $cls }}">
 
                 @error($name)
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -132,10 +129,8 @@
                 Simpan
             </button>
 
-            <a href="{{ route('admin.sekolah.index') }}"
-                class="rounded-lg bg-gray-200 px-5 py-2.5 font-medium text-gray-700 transition hover:bg-gray-300">
-                Batal
-            </a>
+            <a href="{{ auth()->user()->isDinas() ? route('dinas.sekolah.index') : route('dashboard') }}"
+                class="px-5 py-2 bg-gray-300 rounded">Batal</a>
 
         </div>
 
