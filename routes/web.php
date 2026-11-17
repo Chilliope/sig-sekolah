@@ -19,12 +19,18 @@ Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function
 
 // Publik
 Route::get('/', [PetaController::class, 'index'])->name('peta.index');
-Route::get('/data/sekolah', [PetaController::class, 'geojson'])
-    ->name('peta.data');
+Route::get('/data/sekolah', [PetaController::class, 'geojson'])->name('peta.data');
 
-Route::get('/profil-sekolah/{sekolah}', [PetaController::class, 'profil'])
-    ->name('peta.profil');
-    
+Route::get('/profil-sekolah/{sekolah}', [PetaController::class, 'profil'])->name('peta.profil');
+
+Route::get('/pencarian', [PetaController::class, 'cari'])->name('peta.cari');
+Route::get('/klaster', [PetaController::class, 'klaster'])->name('peta.klaster');
+Route::get('/peta-panas', [PetaController::class, 'panas'])->name('peta.panas');
+Route::get('/wilayah', [PetaController::class, 'wilayah'])->name('peta.wilayah');
+Route::get('/data/wilayah', [PetaController::class, 'geojsonWilayah'])->name('peta.data.wilayah');
+Route::get('/rute', [PetaController::class, 'rute'])->name('peta.rute');
+Route::get('/cek-alamat', [PetaController::class, 'alamat'])->name('peta.alamat');
+
 // Tamu
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])
