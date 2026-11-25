@@ -6,6 +6,6 @@
     <form method="POST" action="{{ route('sekolah.update', $sekolah) }}">
         @csrf
         @method('PUT')
-        @include('admin.sekolah._form', ['sekolah' => $sekolah])
+        @include('dinas.sekolah._form', ['sekolah' => $sekolah])
     </form>
 @endsection
