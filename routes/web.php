@@ -9,6 +9,26 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\Admin\UserStatusController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+
+Route::get('/health', function () {
+    try {
+        DB::connection()->getPdo();
+
+        return response()->json([
+            'status' => 'ok',
+            'application' => 'SIG Sekolah',
+            'database' => 'connected',
+        ], 200);
+
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'application' => 'SIG Sekolah',
+            'database' => 'disconnected',
+        ], 503);
+    }
+})->name('health');
 
 // Admin: kelola pengguna
 Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
