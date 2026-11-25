@@ -106,20 +106,27 @@ class RbacTest extends TestCase
     {
         $a = $this->sekolah('11111111');
         $op = $this->user('sekolah', $a);
-        $this->actingAs($op)->put("/sekolah/{$a->id}", [
+
+        $response = $this->actingAs($op)->put("/sekolah/{$a->id}", [
             'npsn' => '99999999',
             'nama' => 'Nama Baru',
             'jenjang' => 'SD',
             'status' => 'Negeri',
             'alamat' => 'Jl. Baru',
             'kecamatan' => 'Uji',
-            'latitude' => -3.31,
-            'longitude' => 114.6,
-        ])->assertRedirect();
+            'latitude' => -3.3,
+            'longitude' => 114.59,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
+
         $a->refresh();
+
         $this->assertSame('11111111', $a->npsn);
         $this->assertSame('Nama Baru', $a->nama);
     }
+
     public function test_sekolah_menyimpan_profil_sendiri(): void
     {
         $a = $this->sekolah('11111111');
